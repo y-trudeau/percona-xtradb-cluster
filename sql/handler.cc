@@ -2296,8 +2296,15 @@ int ha_savepoint(THD *thd, SAVEPOINT *sv)
                                         &thd->transaction.all);
   DBUG_ENTER("ha_savepoint");
 
+
+#ifdef WITH_WSREP
+  if ((WSREP_EMULATE_BINLOG(thd) || mysql_bin_log.is_open()))
+#else
   if (mysql_bin_log.is_open())
+#endif
+  {
     register_binlog_handler(thd, thd->in_multi_stmt_transaction_mode());
+  }
 
   Ha_trx_info *ha_info= trans->ha_list;
 
