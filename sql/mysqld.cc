@@ -6745,6 +6745,10 @@ int mysqld_main(int argc, char **argv)
     {
       wsrep_init_startup (false);
     }
+    
+    /* a new setwd because could have been mounted on top */
+    if (my_setwd(mysql_real_data_home,MYF(MY_WME)) && !opt_help)
+        unireg_abort(1);        /* purecov: inspected */
 
     wsrep_create_appliers(wsrep_slave_threads - 1);
   }
