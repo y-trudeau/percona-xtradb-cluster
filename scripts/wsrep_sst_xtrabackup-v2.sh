@@ -928,10 +928,15 @@ wait_for_listen()
     local HOST=$1
     local PORT=$2
     local MODULE=$3
+    local PARENTPID=$4
+    local CHILDPID
 
     for i in {1..300}
     do
-        ss -p state listening "( sport = :$PORT )" | grep -qE 'socat|nc' && break
+        CHILDPID=$(ps --ppid $PARENTPID | grep -E 'socat|nc' | awk '{print $1}')
+        if [[ -n $CHILDPID ]]; then
+                grep $(ls -l /proc/$CHILDPID/fd | grep socket | cut -d'[' -f2 | cut -d ']' -f1) /proc/$CHILDPID/net/tcp | grep "00000000:$(printf '%x' $PORT)" && break
+        fi
         sleep 0.2
     done
 
@@ -1564,7 +1569,7 @@ then
         rm -f "${KEYRING_FILE_DIR}/${XB_DONOR_KEYRING_FILE}"
     fi
 
-    wait_for_listen ${WSREP_SST_OPT_HOST} ${WSREP_SST_OPT_PORT:-4444} ${MODULE} &
+    wait_for_listen ${WSREP_SST_OPT_HOST} ${WSREP_SST_OPT_PORT:-4444} ${MODULE} $$ &
 
     trap sig_joiner_cleanup HUP PIPE INT TERM
     trap cleanup_joiner EXIT
